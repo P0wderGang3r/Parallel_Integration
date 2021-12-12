@@ -140,8 +140,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CPP_realizations.cpp" />
     <ClCompile Include="OMP_realizations.cpp" />
     <ClCompile Include="Parallel_Programming.cpp" />
+    <ClCompile Include="SEQ_realization.cpp" />
+    <ClCompile Include="shared_within_realizations.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

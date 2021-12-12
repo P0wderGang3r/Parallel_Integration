@@ -1,12 +1,10 @@
-﻿// Parallel_Programming.cpp : Этот файл содержит функцию "main". Здесь начинается и заканчивается выполнение программы.
-//
-
-#include <iostream>
-#include "OMP_realizations.cpp"
+﻿#include "CPP_realizations.cpp"
 
 using namespace std;
 
 int main()
 {
-	omp_start();
+	seq_start(); //seq
+	omp_start(); //base, cs, atomic, for, reduce, ?mtx?
+	cpp_start(); //base, cs, atomic, reduce, ?mtx?
 }
