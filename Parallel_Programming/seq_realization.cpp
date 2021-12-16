@@ -1,6 +1,6 @@
 #include "shared_within_realizations.cpp"
 
-#define n 10000000
+#define ndx 10000000
 
 namespace {//---------------Вычисление интеграла-------------------
 
@@ -8,10 +8,10 @@ namespace {//---------------Вычисление интеграла-------------------
     //Последовательный алгоритм численного интегрирования
     double integrate_seq(double a, double b, f_t f) {
 
-        double dx = (b - a) / n;
+        double dx = (b - a) / ndx;
         double res = 0;
 
-        for (int i = 0; i < n; ++i) {
+        for (int i = 0; i < ndx; ++i) {
             res += f(dx * i + a);
         }
         return res * dx;

@@ -6,6 +6,7 @@
 #include <vector> 
 #include <mutex>
 #include <atomic> 
+#include <Windows.h>
 
 namespace {
 
