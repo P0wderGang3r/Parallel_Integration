@@ -2,11 +2,17 @@
 #include <time.h>
 #include <omp.h>
 
-#include <thread> 
-#include <vector> 
 #include <mutex>
 #include <atomic> 
+#include <thread>
+
+#include <vector>
+#include <numeric>
+
 #include <Windows.h>
+
+
+#define ndx 10000000
 
 namespace {
 
@@ -16,7 +22,8 @@ namespace {
         return x * x;
     }
 
-    //------------------Результаты экспериментов---------------------
+    //----------------Создание экспериментов------------------
+
 
     struct experiment_result_t
     {

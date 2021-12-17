@@ -1,6 +1,5 @@
 #include "shared_within_realizations.cpp"
 
-#define ndx 10000000
 
 namespace {//---------------Вычисление интеграла-------------------
 

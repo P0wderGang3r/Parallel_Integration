@@ -1,6 +1,5 @@
 #include "SEQ_realization.cpp"
 
-#define ndx 10000000
 #define numOfTypes 6
 
 namespace {//---------------Вычисление интеграла-------------------
@@ -75,7 +74,7 @@ namespace {//---------------Вычисление интеграла-------------------
     //Критическая секция в виде атомарной функции, применяемой к переменной, и последовательный доступ к ней
     double integrate_omp_atomic(double a, double b, f_t f)
     {
-        double res = 0.0;
+        double res = 0;
         double dx = (b - a) / ndx;
         unsigned T;
 
@@ -105,7 +104,7 @@ namespace {//---------------Вычисление интеграла-------------------
     // Явное указание распараллеливания цикла for
     double integrate_omp_for(double a, double b, f_t f)
     {
-        double res = 0.0;
+        double res = 0;
         double dx = (b - a) / ndx;
         int i;
 
@@ -128,7 +127,7 @@ namespace {//---------------Вычисление интеграла-------------------
     //алгоритм разбиения на минимальные суммы
     double integrate_omp_reduce(double a, double b, f_t f)
     {
-        double res = 0.0;
+        double res = 0;
         double dx = (b - a) / ndx;
         int i;
 
@@ -147,7 +146,7 @@ namespace {//---------------Вычисление интеграла-------------------
     //Блокировка доступа к блоку кода с помощью MuteEx
     double integrate_omp_mtx(double a, double b, f_t f) {
         {
-            double res = 0.0;
+            double res = 0;
             double dx = (b - a) / ndx;
             unsigned T;
 
