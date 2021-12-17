@@ -1,6 +1,5 @@
 #include "SEQ_realization.cpp"
 
-#define numOfTypes 6
 
 namespace {//---------------Вычисление интеграла-------------------
 
@@ -179,7 +178,7 @@ namespace {//---------------Вычисление интеграла-------------------
     //--------------------Основной поток-----------------------
 
     void omp_start() {
-        integrate_t integrate_type[numOfTypes];
+        integrate_t integrate_type[numOfOMPTypes];
 
         int typeNum = 0;
         integrate_type[typeNum++] = integrate_omp_base;
@@ -190,6 +189,6 @@ namespace {//---------------Вычисление интеграла-------------------
         integrate_type[typeNum++] = integrate_omp_mtx;
 
         std::cout << "OMP results" << std::endl;
-        run_experiments(integrate_type, numOfTypes);
+        run_experiments(integrate_type, numOfOMPTypes);
     }
 }

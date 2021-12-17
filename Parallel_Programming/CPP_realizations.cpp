@@ -1,6 +1,5 @@
 #include "OMP_realizations.cpp"
 
-#define numOfTypes 5
 
 //------------------------------------------------------------------
 
@@ -33,7 +32,7 @@ namespace {
 
         auto thread_proc = [f, get, x0, xn, step, zero, T](unsigned t)
         {
-            unsigned count = ElementType((xn - x0) / step);
+            unsigned count = (unsigned)ElementType((xn - x0) / step);
             unsigned nt = count / T;
             unsigned it0 = nt * t;
             ElementType my_result = zero;
@@ -60,14 +59,13 @@ namespace {
         for (auto& thread : threads)
             thread.join();
 
-        return reduce_par(reduction_buffer.data(), reduction_buffer.size(),
-            [f, zero](const element_t& x, const element_t& y) {return element_t{ f(x.value, y.value) }; }, element_t{ zero }).value;
+        return reduce_par(reduction_buffer.data(), reduction_buffer.size(), [f, zero](const element_t& x, const element_t& y) {return element_t{ f(x.value, y.value) }; }, element_t{ zero }).value;
     }
 
     template <class ElementType, class binary_fn>
 
 
-    ElementType reduce_par(ElementType* V, unsigned count, binary_fn f, ElementType zero)
+    ElementType reduce_par(ElementType* V, size_t count, binary_fn f, ElementType zero)
     {
         unsigned j = 1;
         constexpr unsigned k = 2;
@@ -283,7 +281,7 @@ namespace {
     //--------------------Основной поток-----------------------
 
     void cpp_start() {
-        integrate_t integrate_type[numOfTypes];
+        integrate_t integrate_type[numOfCPPTypes];
 
         int typeNum = 0;
 
@@ -294,6 +292,6 @@ namespace {
         integrate_type[typeNum++] = integrate_cpp_mtx;
 
         std::cout << "CPP results" << std::endl;
-        run_experiments(integrate_type, numOfTypes);
+        run_experiments(integrate_type, numOfCPPTypes);
     }
 }

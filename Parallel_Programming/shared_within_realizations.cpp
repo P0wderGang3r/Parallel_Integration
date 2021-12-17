@@ -14,6 +14,9 @@
 
 #define ndx 10000000
 
+#define numOfOMPTypes 6
+#define numOfCPPTypes 5
+
 namespace {
 
     typedef double (*f_t) (double);
