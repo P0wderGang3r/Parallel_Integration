@@ -8,25 +8,24 @@ namespace {//---------------Вычисление интеграла-------------------
     double integrate_omp_base(double a, double b, f_t f) {
         double dx = (b - a) / ndx;
         double res = 0;
-        unsigned T;
+        omp_set_num_threads(numOfThreads);
         double* results;
 
-#pragma omp parallel shared(results, T)
+#pragma omp parallel shared(results, numOfThreads)
         {
             unsigned t = (unsigned)omp_get_thread_num();
-            T = (unsigned)omp_get_num_threads();
 
 #pragma omp single
             {
-                results = new double[T];
-                for (unsigned i = 0; i < T; i++)
+                results = new double[numOfThreads];
+                for (unsigned i = 0; i < numOfThreads; i++)
                     results[i] = 0;
 
                 if (!results)
                     abort();
             }
 
-            for (unsigned i = t; i < ndx; i += T) {
+            for (unsigned i = t; i < ndx; i += numOfThreads) {
                 results[t] += f(dx * i + a);
             }
 
@@ -35,7 +34,7 @@ namespace {//---------------Вычисление интеграла-------------------
             //приостанавливаются в ожидании, пока все другие подойдут сюда же
             //Неявно используется в конце каждого параллельного цикла
         }
-        for (unsigned i = 0; i < T; i++)
+        for (unsigned i = 0; i < numOfThreads; i++)
             res += results[i];
 
         return res * dx;
@@ -48,21 +47,22 @@ namespace {//---------------Вычисление интеграла-------------------
     {
         double res = 0;
         double dx = (b - a) / ndx;
-        unsigned T;
+        omp_set_num_threads(numOfThreads);
 
-#pragma omp parallel shared(res, T) 
+#pragma omp parallel shared(res, numOfThreads) 
         {
             unsigned t = (unsigned)omp_get_thread_num();
-            T = (unsigned)omp_get_num_threads();
+            double val = 0;
 
-            for (unsigned i = t; i < ndx; i += T)
+            for (unsigned i = t; i < ndx; i += numOfThreads)
             {
+                val += f(dx * i + a);
+            }
 #pragma omp critical
-                //Прерывает другие потоки в ожидании выполнения
-                //следующей операции или некоторого их набора
-                {
-                    res += f(dx * i + a);
-                }
+            //Прерывает другие потоки в ожидании выполнения
+            //следующей операции или некоторого их набора
+            {
+                res += val;
             }
         }
         return res * dx;
@@ -75,24 +75,23 @@ namespace {//---------------Вычисление интеграла-------------------
     {
         double res = 0;
         double dx = (b - a) / ndx;
-        unsigned T;
+        omp_set_num_threads(numOfThreads);
 
-#pragma omp parallel shared(res, T) 
+#pragma omp parallel shared(res, numOfThreads) 
         {
             unsigned t = (unsigned)omp_get_thread_num();
-            T = (unsigned)omp_get_num_threads();
-            double val;
+            double val = 0;
 
-            for (unsigned i = t; i < ndx; i += T)
+            for (unsigned i = t; i < ndx; i += numOfThreads)
             {
-                val = f((double)(dx * i + a));
-#pragma omp atomic
-                //Прерывает другие потоки в ожидании выполнения
-                //следующей операции типа суммы или разности двух переменных
-                //Быстрее, чем CS, так как инициализирует более оптимальные директивы процессора
-                //Но использование их более узконаправлено, исходя из описания выше
-                res += val;
+                val += f((double)(dx * i + a));
             }
+#pragma omp atomic
+            //Прерывает другие потоки в ожидании выполнения
+            //следующей операции типа суммы или разности двух переменных
+            //Быстрее, чем CS, так как инициализирует более оптимальные директивы процессора
+            //Но использование их более узконаправлено, исходя из описания выше
+            res += val;
         }
 
         return res * dx;
@@ -105,18 +104,19 @@ namespace {//---------------Вычисление интеграла-------------------
     {
         double res = 0;
         double dx = (b - a) / ndx;
+        omp_set_num_threads(numOfThreads);
         int i;
 
 #pragma omp parallel for shared (res)
-        //Следуюший цикл будет разбит на восемь потоков вычислений
-        //с переменной с общим доступом для каждого из потоков res
-        //которую мы делаем атомарной для нивелирования условия гонки
-        for (i = 0; i < ndx; ++i)
-        {
-            double val = f((double)(dx * i + a));
+            //Следуюший цикл будет разбит на восемь потоков вычислений
+            //с переменной с общим доступом для каждого из потоков res
+            //которую мы делаем атомарной для нивелирования условия гонки
+            for (i = 0; i < ndx; ++i)
+            {
+                double val = f((double)(dx * i + a));
 #pragma omp atomic
-            res += val;
-        }
+                res += val;
+            }
 
         return res * dx;
     }
@@ -128,6 +128,7 @@ namespace {//---------------Вычисление интеграла-------------------
     {
         double res = 0;
         double dx = (b - a) / ndx;
+        omp_set_num_threads(numOfThreads);
         int i;
 
 #pragma omp parallel for reduction(+: res)
@@ -142,31 +143,30 @@ namespace {//---------------Вычисление интеграла-------------------
 
 
     //------------------>integrate_omp_mtx
-    //Блокировка доступа к блоку кода с помощью MuteEx
+    //Блокировка доступа к блоку кода с помощью Mute Expression
     double integrate_omp_mtx(double a, double b, f_t f) {
         {
             double res = 0;
             double dx = (b - a) / ndx;
-            unsigned T;
+            omp_set_num_threads(numOfThreads);
 
             omp_lock_t mtxLock;
             omp_init_lock(&mtxLock);
 
-#pragma omp parallel shared(res, T) 
+#pragma omp parallel shared(res, numOfThreads) 
             {
                 unsigned t = (unsigned)omp_get_thread_num();
-                T = (unsigned)omp_get_num_threads();
-                double val;
+                double val = 0;
 
-                for (unsigned i = t; i < ndx; i += T)
+                for (unsigned i = t; i < ndx; i += numOfThreads)
                 {
-                    val = f((double)(dx * i + a));
-                    //Следующая после блокировки строка кода будет заблокирована на время выполнения благодаря MuteExpression
-                    omp_set_lock(&mtxLock);
-                    res += val;
-                    omp_unset_lock(&mtxLock);
-                    //И разблокирована после окончания её использования одним из потоков
+                    val += f((double)(dx * i + a));
                 }
+                //Следующая после блокировки строка кода будет заблокирована на время выполнения благодаря MuteExpression
+                omp_set_lock(&mtxLock);
+                res += val;
+                omp_unset_lock(&mtxLock);
+                //И разблокирована после окончания её использования одним из потоков
             }
 
             return res * dx;
@@ -174,11 +174,13 @@ namespace {//---------------Вычисление интеграла-------------------
     }
 
     //Ещё был omp_dynamic, но... Медленный и не репрезентативный
+    //Ещё барьер
 
     //--------------------Основной поток-----------------------
 
     void omp_start() {
         integrate_t integrate_type[numOfOMPTypes];
+        std::string typeNames[numOfOMPTypes];
 
         int typeNum = 0;
         integrate_type[typeNum++] = integrate_omp_base;
@@ -188,7 +190,15 @@ namespace {//---------------Вычисление интеграла-------------------
         integrate_type[typeNum++] = integrate_omp_reduce;
         integrate_type[typeNum++] = integrate_omp_mtx;
 
+        typeNum = 0;
+        typeNames[typeNum++] = "integrate_omp_base";
+        typeNames[typeNum++] = "integrate_omp_cs";
+        typeNames[typeNum++] = "integrate_omp_atomic";
+        typeNames[typeNum++] = "integrate_omp_for";
+        typeNames[typeNum++] = "integrate_omp_reduce";
+        typeNames[typeNum++] = "integrate_omp_mtx";
+
         std::cout << "OMP results" << std::endl;
-        run_experiments(integrate_type, numOfOMPTypes);
+        run_experiments(integrate_type, typeNames, numOfOMPTypes);
     }
 }

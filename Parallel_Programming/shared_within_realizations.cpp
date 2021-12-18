@@ -10,14 +10,18 @@
 #include <numeric>
 
 #include <Windows.h>
+#include <string>
 
 
 #define ndx 10000000
 
-#define numOfOMPTypes 6
-#define numOfCPPTypes 5
+#define numOfOMPTypes 6 //With reduce equals 6
+#define numOfCPPTypes 4 //With reduce equals 5
 
 namespace {
+    using std::thread;
+
+    unsigned numOfThreads = 1;
 
     typedef double (*f_t) (double);
 
@@ -51,17 +55,53 @@ namespace {
         }
     }
 
-    void run_experiments(integrate_t* integrate_type, int numOfTypes) {
+    void run_experiments(integrate_t* integrate_type, std::string* typeNames, int numOfTypes) {
         experiment_result_t r;
         for (int i = 0; i < numOfTypes; i++) {
-            try{
-                r = run_experiment(integrate_type[i]);
-                std::cout << "result: " << r.result << " " << r.time << std::endl;
+            try {
+                std::cout << "Integrate type name: " << typeNames[i] << std::endl;
+                for (unsigned j = 1; j <= thread::hardware_concurrency(); j++) {
+                    numOfThreads = j;
+                    r = run_experiment(integrate_type[i]);
+                    std::cout << "" << r.result << " " << r.time << std::endl;
+                }
+                //std::cout << "result: " << r.result << " " << r.time << std::endl;
+
             }
             catch (...) {
-                
+
             }
         }
     }
 
+    unsigned reduceThreads = 1;
+
+    void OMP_reduce_is_so_unique(integrate_t integrate_type) {
+        experiment_result_t r;
+        try {
+            std::cout << "Integrate type name: " << "OMP_reduce" << std::endl;
+            numOfThreads = reduceThreads;
+            r = run_experiment(integrate_type);
+            std::cout << "result: " << r.result << " " << r.time << std::endl;
+
+        }
+        catch (...) {
+
+        }
+    }
+
+
+    void CPP_reduce_is_so_unique(integrate_t integrate_type) {
+        experiment_result_t r;
+        try {
+            std::cout << "Integrate type name: " << "CPP_reduce" << std::endl;
+            numOfThreads = reduceThreads;
+            r = run_experiment(integrate_type);
+            std::cout << "result: " << r.result << " " << r.time << std::endl;
+
+        }
+        catch (...) {
+
+        }
+    }
 }

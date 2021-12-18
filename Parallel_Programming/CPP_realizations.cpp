@@ -18,7 +18,6 @@ namespace {
         std::is_invocable_v<unary_fn, ElementType>&& std::is_convertible_v<std::invoke_result_t<unary_fn, ElementType>, ElementType>
         )
 
-
         auto reduce_par_2(binary_fn f, unary_fn get, ElementType x0, ElementType xn, ElementType step, ElementType zero)
     {
         struct element_t
@@ -26,7 +25,7 @@ namespace {
             alignas(std::hardware_destructive_interference_size) ElementType value;
         };
 
-        unsigned T = thread::hardware_concurrency();
+        unsigned T = numOfThreads;
         static vector<element_t> reduction_buffer(T, element_t{ 0.0 });
         vector<thread> threads;
 
@@ -62,15 +61,15 @@ namespace {
         return reduce_par(reduction_buffer.data(), reduction_buffer.size(), [f, zero](const element_t& x, const element_t& y) {return element_t{ f(x.value, y.value) }; }, element_t{ zero }).value;
     }
 
-    template <class ElementType, class binary_fn>
 
+    template <class ElementType, class binary_fn>
 
     ElementType reduce_par(ElementType* V, size_t count, binary_fn f, ElementType zero)
     {
         unsigned j = 1;
         constexpr unsigned k = 2;
         vector<thread> threads;
-        unsigned T = thread::hardware_concurrency();
+        unsigned T = numOfThreads;
 
         for (unsigned t = 1; t < T; t++)
             threads.emplace_back(thread{});
@@ -117,7 +116,7 @@ namespace {
         double res = 0;
 
         //Получаем количество потоков
-        unsigned T = thread::hardware_concurrency();
+        unsigned T = numOfThreads;
         vector<double> results(T);
 
         //Лямбда, содержащая функции, которые затем будут выполнены каждым из потоков
@@ -154,7 +153,7 @@ namespace {
         double res = 0;
 
         //Получаем количество потоков
-        unsigned T = thread::hardware_concurrency();
+        unsigned T = numOfThreads;
 
         //Инициализация критической секции
         CRITICAL_SECTION cs;
@@ -202,7 +201,7 @@ namespace {
         atomic<double> res = 0;
 
         //Получаем количество потоков
-        unsigned T = thread::hardware_concurrency();
+        unsigned T = numOfThreads;
 
         //Лямбда, содержащая функции, которые затем будут выполнены каждым из потоков
         auto thread_process = [=, &res](unsigned t) {
@@ -242,7 +241,7 @@ namespace {
         double res = 0;
 
         //Получаем количество потоков
-        unsigned T = thread::hardware_concurrency();
+        unsigned T = numOfThreads;
 
         mutex mtx;
 
@@ -282,16 +281,25 @@ namespace {
 
     void cpp_start() {
         integrate_t integrate_type[numOfCPPTypes];
+        std::string typeNames[numOfOMPTypes];
 
         int typeNum = 0;
 
         integrate_type[typeNum++] = integrate_cpp_base;
         integrate_type[typeNum++] = integrate_cpp_cs;
         integrate_type[typeNum++] = integrate_cpp_atomic;
-        integrate_type[typeNum++] = integrate_cpp_reduce;
+        //integrate_type[typeNum++] = integrate_cpp_reduce;
         integrate_type[typeNum++] = integrate_cpp_mtx;
 
+        typeNum = 0;
+        typeNames[typeNum++] = "integrate_cpp_base";
+        typeNames[typeNum++] = "integrate_cpp_cs";
+        typeNames[typeNum++] = "integrate_cpp_atomic";
+        //typeNames[typeNum++] = "integrate_cpp_reduce";
+        typeNames[typeNum++] = "integrate_cpp_mtx";
+
+
         std::cout << "CPP results" << std::endl;
-        run_experiments(integrate_type, numOfCPPTypes);
+        run_experiments(integrate_type, typeNames, numOfCPPTypes);
     }
 }
