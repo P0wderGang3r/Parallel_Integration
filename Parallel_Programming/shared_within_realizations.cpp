@@ -15,12 +15,8 @@
 
 #define ndx 10000000
 
-#define is_custom_barrier false
-#if is_custom_barrier
-#define reduce_type reduce_par_custom_barrier(reduction_buffer.data(), reduction_buffer.size(), [f, zero](const element_t& x, const element_t& y) {return element_t{ f(x.value, y.value) }; }, element_t{ zero }).value
-#else
-#define reduce_type reduce_par(reduction_buffer.data(), reduction_buffer.size(), [f, zero](const element_t& x, const element_t& y) {return element_t{ f(x.value, y.value) }; }, element_t{ zero }).value
-#endif
+//#define CACHE_LINE std::hardware_destructive_interference_size
+#define CACHE_LINE 64u
 
 namespace {
     using std::vector;
@@ -72,7 +68,7 @@ namespace {
         for (int i = 0; i < types->size(); i++) {
             try {
                 std::cout << "Integrate type name: " << types->at(i).typeName << std::endl;
-                for (unsigned j = 1; j <= thread::hardware_concurrency(); j++) {
+                for (unsigned j = 1; j <= (unsigned)thread::hardware_concurrency(); j++) {
                     numOfThreads = j;
                     r = run_experiment(types->at(i).integrate);
                     std::cout << "" << r.result << " " << r.time << std::endl;
@@ -83,37 +79,6 @@ namespace {
             catch (...) {
 
             }
-        }
-    }
-
-    unsigned reduceThreads = 8;
-
-    void OMP_reduce_is_so_unique(integrate_t integrate_type) {
-        experiment_result_t r;
-        try {
-            std::cout << "Integrate type name: " << "OMP_reduce" << std::endl;
-            numOfThreads = reduceThreads;
-            r = run_experiment(integrate_type);
-            std::cout << "result: " << r.result << " " << r.time << std::endl;
-
-        }
-        catch (...) {
-
-        }
-    }
-
-
-    void CPP_reduce_is_so_unique(integrate_t integrate_type) {
-        experiment_result_t r;
-        try {
-            std::cout << "Integrate type name: " << "CPP_reduce" << std::endl;
-            numOfThreads = reduceThreads;
-            r = run_experiment(integrate_type);
-            std::cout << "result: " << r.result << " " << r.time << std::endl;
-
-        }
-        catch (...) {
-
         }
     }
 }

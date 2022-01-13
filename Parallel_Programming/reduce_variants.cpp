@@ -32,63 +32,19 @@ public:
 
 namespace {
 
-    //------------------------------------------------------
-
-    template <class ElementType, class binary_fn>
-
-    ElementType reduce_par_custom_barrier(ElementType* V, size_t count, binary_fn f, ElementType zero)
-    {
-        unsigned j = 1;
-        constexpr unsigned k = 2;
-        vector<thread> threads;
-        unsigned T = numOfThreads;
-        barrier bar{ T };
-
-        for (unsigned t = 0; t < T; t++)
-            threads.emplace_back(thread{});
-
-        while (count > j)
-        {
-            auto thread_fn = [k, count, j, T, zero, V, &bar, f](unsigned t)
-            {
-                for (unsigned i = t * j * k; i < count; i += T * j * k)
-                {
-                    ElementType other = zero;
-                    if (i + j < count)
-                        other = V[i + j];
-                    V[i] = f(V[i], other);
-                }
-                bar.arrive_and_wait(); //самодельный барьер
-            };
-
-            for (unsigned t = 0; t < T; t++)
-                threads[t] = thread(thread_fn, t);
-
-            thread_fn(0);
-
-            for (auto& thread : threads)
-                thread.join();
-
-            j *= k;
-        }
-        return V[0];
-    }
-
 
     //------------------------------------------------------
 
-    template <class ElementType, class binary_fn>
 
-    ElementType reduce_par(ElementType* V, size_t count, binary_fn f, ElementType zero)
+    template <class ElementType, class binary_fn>
+    ElementType reduce_par(ElementType* V, unsigned count, binary_fn f, ElementType zero)
     {
         unsigned j = 1;
         constexpr unsigned k = 2;
-        vector<thread> threads;
-        unsigned T = numOfThreads;
-
-        for (unsigned t = 0; t < T; t++)
-            threads.emplace_back(thread{});
-
+        std::vector<std::thread> threads;
+        unsigned T =numOfThreads;
+        for (unsigned t = 1; t < T; t++)
+            threads.emplace_back(std::thread{});
         while (count > j)
         {
             auto thread_fn = [k, count, j, T, zero, V, f](unsigned t)
@@ -101,31 +57,18 @@ namespace {
                     V[i] = f(V[i], other);
                 }
             };
-
-            for (unsigned t = 0; t < T; t++)
-                threads[t] = thread(thread_fn, t);
-
+            for (unsigned t = 1; t < T; t++)
+                threads[t - 1] = std::thread(thread_fn, t);
             thread_fn(0);
-
             for (auto& thread : threads)
                 thread.join();
-
             j *= k;
         }
         return V[0];
     }
 
-
-    //------------------------------------------------------
-
-
     template <class binary_fn, class unary_fn, class ElementType>
-        requires (
-    std::is_invocable_v<binary_fn, ElementType, ElementType>&& std::is_convertible_v<std::invoke_result_t<binary_fn, ElementType, ElementType>, ElementType>&&
-        std::is_invocable_v<unary_fn, ElementType>&& std::is_convertible_v<std::invoke_result_t<unary_fn, ElementType>, ElementType>
-        )
-
-        auto reduce_parallel(binary_fn f, unary_fn get, ElementType x0, ElementType xn, ElementType step, ElementType zero)
+    auto reduce_par_2(binary_fn f, unary_fn get, ElementType x0, ElementType xn, ElementType step, ElementType zero)
     {
         struct element_t
         {
@@ -133,14 +76,15 @@ namespace {
         };
 
         unsigned T = numOfThreads;
-        static vector<element_t> reduction_buffer(T, element_t{ 0.0 });
-        vector<thread> threads(T);
+        static std::vector<element_t> reduction_buffer(std::thread::hardware_concurrency(), element_t{ 0.0 });
+        std::vector<std::thread> threads;
 
-        auto thread_proc = [f, get, x0, xn, step, zero, T](unsigned t)
+        barrier bar{ T };
+
+        auto thread_proc = [f, get, x0, xn, step, zero, T, &bar](unsigned t)
         {
-            unsigned count = (unsigned)ElementType((xn - x0) / step);
-            unsigned nt = count / T;
-            unsigned it0 = nt * t;
+            std::size_t count = (std::size_t)ElementType((xn - x0) / step);
+            std::size_t nt = count / T, it0 = nt * t;
             ElementType my_result = zero;
 
             if (nt < (count % T))
@@ -148,25 +92,35 @@ namespace {
             else
                 it0 += count % T;
 
-            unsigned it1 = it0 + nt;
+            std::size_t it1 = it0 + nt;
             ElementType x = x0 + step * it0;
 
-            for (unsigned i = it0; i < it1; ++i, x += step)
+            for (std::size_t i = it0; i < it1; ++i, x += step)
                 my_result = f(my_result, get(x));
 
             reduction_buffer[t].value = my_result;
+            bar.arrive_and_wait();
+
+            for (std::size_t reduction_distance = 1u, reduction_next = 2; reduction_distance < T; reduction_distance = reduction_next, reduction_next += reduction_next)
+            {
+                if (t + reduction_distance < T && (t & reduction_next - 1) == 0)
+                    reduction_buffer[t].value = f(reduction_buffer[t].value, reduction_buffer[t + reduction_distance].value);
+
+                bar.arrive_and_wait();
+            }
         };
 
-        for (unsigned t = 0; t < T; t++)
-            threads[t] = thread(thread_proc, t);
+        for (unsigned t = 1; t < T; ++t)
+            threads.emplace_back(thread_proc, t);
 
         thread_proc(0);
 
-        for (auto& thread : threads) {
-            std::cout << threads.size() << std::endl;
+        for (auto& thread : threads)
             thread.join();
-        }
 
-        return reduce_type;
+        return reduction_buffer[0].value;
     }
+
+
+    //------------------------------------------------------
 }

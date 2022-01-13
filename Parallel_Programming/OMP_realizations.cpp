@@ -44,7 +44,6 @@ namespace {//---------------Вычисление интеграла-------------------
 
     //------------------>integrate_omp_base
     //Разделение переменных на длину разово загружаемого процессором кэша
-#define CACHE_LINE 64u
     double integrate_omp_base(double a, double b, f_t f) {
         double dx = (b - a) / ndx;
         double res = 0;
@@ -220,12 +219,12 @@ namespace {//---------------Вычисление интеграла-------------------
     void omp_start() {
         std::vector<vectorType> OMPTypes;
 
-        //OMPTypes.emplace_back(integrate_omp_fs, "integrate_omp_fs");
-        //OMPTypes.emplace_back(integrate_omp_base, "integrate_omp_base");
+        OMPTypes.emplace_back(integrate_omp_fs, "integrate_omp_fs");
+        OMPTypes.emplace_back(integrate_omp_base, "integrate_omp_base");
         //OMPTypes.emplace_back(integrate_omp_cs, "integrate_omp_cs");
         //OMPTypes.emplace_back(integrate_omp_for, "integrate_omp_for");
         //OMPTypes.emplace_back(integrate_omp_atomic, "integrate_omp_atomic");
-        OMPTypes.emplace_back(integrate_omp_reduce, "integrate_omp_reduce");
+        //OMPTypes.emplace_back(integrate_omp_reduce, "integrate_omp_reduce");
         //OMPTypes.emplace_back(integrate_omp_mtx, "integrate_omp_mtx");
 
         std::cout << "OMP results" << std::endl;

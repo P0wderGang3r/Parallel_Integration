@@ -14,7 +14,7 @@ namespace {
     {
         double dx = (b - a) / ndx;
 
-        return reduce_parallel([f, dx](double x, double y) {return x + y; }, f, a, b, dx, 0.0) * dx;
+        return reduce_par_2([f, dx](double x, double y) {return x + y; }, f, a, b, dx, 0.0) * dx;
     }
 
 
@@ -231,8 +231,8 @@ namespace {
     void cpp_start() {;
         std::vector<vectorType> CPPTypes;
 
-        //CPPTypes.emplace_back(integrate_cpp_fs, "integrate_cpp_fs");
-        //CPPTypes.emplace_back(integrate_cpp_base, "integrate_cpp_base");
+        CPPTypes.emplace_back(integrate_cpp_fs, "integrate_cpp_fs");
+        CPPTypes.emplace_back(integrate_cpp_base, "integrate_cpp_base");
         //CPPTypes.emplace_back(integrate_cpp_cs, "integrate_cpp_cs");
         //CPPTypes.emplace_back(integrate_cpp_atomic, "integrate_cpp_atomic");
         CPPTypes.emplace_back(integrate_cpp_reduce, "integrate_cpp_reduce");
