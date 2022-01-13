@@ -4,8 +4,7 @@ using namespace std;
 
 int main()
 {
-	freopen("input.txt", "w", stdin);
-	freopen("output.txt", "w", stdout);
+	freopen("output_parallel.txt", "w", stdout);
 	//cout << std::thread::hardware_concurrency();
 	seq_start(); //seq
 	omp_start(); //base, cs, atomic, for, reduce, mtx
