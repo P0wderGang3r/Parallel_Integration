@@ -1,11 +1,13 @@
 #include "SEQ_realization.cpp"
+#include <stdio.h>
+#include <stdlib.h>
 
 
 namespace {//---------------Вычисление интеграла-------------------
 
-    //------------------>integrate_omp_base
+    //------------------>integrate_omp_fs
     //Параллельный алгоритм численного интегрирования с массивом
-    double integrate_omp_base(double a, double b, f_t f) {
+    double integrate_omp_fs(double a, double b, f_t f) {
         double dx = (b - a) / ndx;
         double res = 0;
         omp_set_num_threads(numOfThreads);
@@ -40,9 +42,46 @@ namespace {//---------------Вычисление интеграла-------------------
         return res * dx;
     }
 
+    //------------------>integrate_omp_base
+    //Разделение переменных на длину разово загружаемого процессором кэша
+#define CACHE_LINE 64u
+    double integrate_omp_base(double a, double b, f_t f) {
+        double dx = (b - a) / ndx;
+        double res = 0;
+        omp_set_num_threads(numOfThreads);
+        double* results;
+
+#pragma omp parallel shared(results, numOfThreads)
+        {
+            unsigned t = (unsigned)omp_get_thread_num();
+
+#pragma omp single
+            {
+                results = (double*) _aligned_malloc(CACHE_LINE, max_threads * sizeof(double));
+                for (unsigned i = 0; i < numOfThreads; i++)
+                    results[i] = 0;
+
+                if (!results)
+                    abort();
+            }
+
+            for (unsigned i = t; i < ndx; i += numOfThreads) {
+                results[t] += f(dx * i + a);
+            }
+
+#pragma omp barrier
+        }
+        for (unsigned i = 0; i < numOfThreads; i++)
+            res += results[i];
+
+        _aligned_free(results);
+
+        return res * dx;
+    }
+
 
     //------------------>integrate_omp_cs
-    //Критическая секуия, последовательный доступ к ней
+    //Критическая секция, последовательный доступ к ней
     double integrate_omp_cs(double a, double b, f_t f)
     {
         double res = 0;
@@ -179,26 +218,17 @@ namespace {//---------------Вычисление интеграла-------------------
     //--------------------Основной поток-----------------------
 
     void omp_start() {
-        integrate_t integrate_type[numOfOMPTypes];
-        std::string typeNames[numOfOMPTypes];
+        std::vector<vectorType> OMPTypes;
 
-        int typeNum = 0;
-        integrate_type[typeNum++] = integrate_omp_base;
-        integrate_type[typeNum++] = integrate_omp_cs;
-        integrate_type[typeNum++] = integrate_omp_atomic;
-        integrate_type[typeNum++] = integrate_omp_for;
-        integrate_type[typeNum++] = integrate_omp_reduce;
-        integrate_type[typeNum++] = integrate_omp_mtx;
-
-        typeNum = 0;
-        typeNames[typeNum++] = "integrate_omp_base";
-        typeNames[typeNum++] = "integrate_omp_cs";
-        typeNames[typeNum++] = "integrate_omp_atomic";
-        typeNames[typeNum++] = "integrate_omp_for";
-        typeNames[typeNum++] = "integrate_omp_reduce";
-        typeNames[typeNum++] = "integrate_omp_mtx";
+        //OMPTypes.emplace_back(integrate_omp_fs, "integrate_omp_fs");
+        //OMPTypes.emplace_back(integrate_omp_base, "integrate_omp_base");
+        //OMPTypes.emplace_back(integrate_omp_cs, "integrate_omp_cs");
+        //OMPTypes.emplace_back(integrate_omp_for, "integrate_omp_for");
+        //OMPTypes.emplace_back(integrate_omp_atomic, "integrate_omp_atomic");
+        OMPTypes.emplace_back(integrate_omp_reduce, "integrate_omp_reduce");
+        //OMPTypes.emplace_back(integrate_omp_mtx, "integrate_omp_mtx");
 
         std::cout << "OMP results" << std::endl;
-        run_experiments(integrate_type, typeNames, numOfOMPTypes);
+        run_experiments(&OMPTypes);
     }
 }

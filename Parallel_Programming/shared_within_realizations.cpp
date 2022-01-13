@@ -8,18 +8,25 @@
 
 #include <vector>
 #include <numeric>
+#include <type_traits>
 
 #include <Windows.h>
 #include <string>
 
-
 #define ndx 10000000
 
-#define numOfOMPTypes 6 //With reduce equals 6
-#define numOfCPPTypes 4 //With reduce equals 5
+#define is_custom_barrier false
+#if is_custom_barrier
+#define reduce_type reduce_par_custom_barrier(reduction_buffer.data(), reduction_buffer.size(), [f, zero](const element_t& x, const element_t& y) {return element_t{ f(x.value, y.value) }; }, element_t{ zero }).value
+#else
+#define reduce_type reduce_par(reduction_buffer.data(), reduction_buffer.size(), [f, zero](const element_t& x, const element_t& y) {return element_t{ f(x.value, y.value) }; }, element_t{ zero }).value
+#endif
 
 namespace {
+    using std::vector;
     using std::thread;
+
+    unsigned max_threads = (unsigned)omp_get_max_threads();
 
     unsigned numOfThreads = 1;
 
@@ -40,6 +47,11 @@ namespace {
 
     typedef double (*integrate_t)(double a, double b, f_t f);
 
+    struct vectorType {
+        integrate_t integrate;
+        std::string typeName;
+    };
+
     experiment_result_t run_experiment(integrate_t integrate) {
         experiment_result_t result;
         try {
@@ -55,14 +67,14 @@ namespace {
         }
     }
 
-    void run_experiments(integrate_t* integrate_type, std::string* typeNames, int numOfTypes) {
+    void run_experiments(std::vector<vectorType>* types) {
         experiment_result_t r;
-        for (int i = 0; i < numOfTypes; i++) {
+        for (int i = 0; i < types->size(); i++) {
             try {
-                std::cout << "Integrate type name: " << typeNames[i] << std::endl;
+                std::cout << "Integrate type name: " << types->at(i).typeName << std::endl;
                 for (unsigned j = 1; j <= thread::hardware_concurrency(); j++) {
                     numOfThreads = j;
-                    r = run_experiment(integrate_type[i]);
+                    r = run_experiment(types->at(i).integrate);
                     std::cout << "" << r.result << " " << r.time << std::endl;
                 }
                 //std::cout << "result: " << r.result << " " << r.time << std::endl;
@@ -74,7 +86,7 @@ namespace {
         }
     }
 
-    unsigned reduceThreads = 1;
+    unsigned reduceThreads = 8;
 
     void OMP_reduce_is_so_unique(integrate_t integrate_type) {
         experiment_result_t r;
