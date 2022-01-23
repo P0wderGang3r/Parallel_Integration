@@ -13,7 +13,7 @@ namespace {//---------------Вычисление интеграла-------------------
         for (int i = 0; i < ndx; ++i) {
             res += f(dx * i + a);
         }
-        return res * dx;
+        return res;
     }
 
 

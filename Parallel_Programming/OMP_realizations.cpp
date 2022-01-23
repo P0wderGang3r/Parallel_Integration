@@ -221,11 +221,11 @@ namespace {//---------------Вычисление интеграла-------------------
 
         OMPTypes.emplace_back(integrate_omp_fs, "integrate_omp_fs");
         OMPTypes.emplace_back(integrate_omp_base, "integrate_omp_base");
-        //OMPTypes.emplace_back(integrate_omp_cs, "integrate_omp_cs");
-        //OMPTypes.emplace_back(integrate_omp_for, "integrate_omp_for");
-        //OMPTypes.emplace_back(integrate_omp_atomic, "integrate_omp_atomic");
-        //OMPTypes.emplace_back(integrate_omp_reduce, "integrate_omp_reduce");
-        //OMPTypes.emplace_back(integrate_omp_mtx, "integrate_omp_mtx");
+        OMPTypes.emplace_back(integrate_omp_cs, "integrate_omp_cs");
+        OMPTypes.emplace_back(integrate_omp_for, "integrate_omp_for");
+        OMPTypes.emplace_back(integrate_omp_atomic, "integrate_omp_atomic");
+        OMPTypes.emplace_back(integrate_omp_reduce, "integrate_omp_reduce");
+        OMPTypes.emplace_back(integrate_omp_mtx, "integrate_omp_mtx");
 
         std::cout << "OMP results" << std::endl;
         run_experiments(&OMPTypes);

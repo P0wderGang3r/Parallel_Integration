@@ -233,10 +233,10 @@ namespace {
 
         CPPTypes.emplace_back(integrate_cpp_fs, "integrate_cpp_fs");
         CPPTypes.emplace_back(integrate_cpp_base, "integrate_cpp_base");
-        //CPPTypes.emplace_back(integrate_cpp_cs, "integrate_cpp_cs");
-        //CPPTypes.emplace_back(integrate_cpp_atomic, "integrate_cpp_atomic");
+        CPPTypes.emplace_back(integrate_cpp_cs, "integrate_cpp_cs");
+        CPPTypes.emplace_back(integrate_cpp_atomic, "integrate_cpp_atomic");
         CPPTypes.emplace_back(integrate_cpp_reduce, "integrate_cpp_reduce");
-        //CPPTypes.emplace_back(integrate_cpp_mtx, "integrate_cpp_mtx");
+        CPPTypes.emplace_back(integrate_cpp_mtx, "integrate_cpp_mtx");
 
         std::cout << "CPP results" << std::endl;
         run_experiments(&CPPTypes);

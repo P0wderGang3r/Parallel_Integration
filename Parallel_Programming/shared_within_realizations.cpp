@@ -13,7 +13,7 @@
 #include <Windows.h>
 #include <string>
 
-#define ndx 10000000
+#define ndx 100
 
 //#define CACHE_LINE std::hardware_destructive_interference_size
 #define CACHE_LINE 64u
